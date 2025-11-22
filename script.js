@@ -66,3 +66,5 @@ $(document).ready(function() {
     });
   });
 });
+// Seu script JavaScript aqui
+console.log('Olá, mundo!');
