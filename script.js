@@ -1,70 +1,41 @@
-$(document).ready(function() {
-  // Lidar com a submissão do formulário de publicação
-  $('#form-publicacao').submit(function(event) {
-    event.preventDefault();
-    var conteudo = $('#conteudo').val();
-    var fotos = $('#fotos')[0].files;
-    var formData = new FormData();
-    formData.append('conteudo', conteudo);
-    for (var i = 0; i < fotos.length; i++) {
-      formData.append('fotos', fotos[i]);
-    }
-    $.ajax({
-      type: 'POST',
-      url: '/publicacao',
-      data: formData,
-      processData: false,
-      contentType: false,
-      success: function(data) {
-        console.log(data);
-        $('#lista-publicacoes').append('<p>' + data.conteudo + '</p>');
-      }
+let publicacoes = [];
+let eventos = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const formPublicacao = document.getElementById('form-publicacao');
+  const formEvento = document.getElementById('form-evento');
+
+  formPublicacao.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const conteudo = document.getElementById('conteudo').value;
+    publicacoes.push(conteudo);
+    document.getElementById('lista-publicacoes').innerHTML = '';
+    publicacoes.forEach((publicacao) => {
+      const p = document.createElement('p');
+      p.textContent = publicacao;
+      document.getElementById('lista-publicacoes').appendChild(p);
     });
+    document.getElementById('conteudo').value = '';
   });
 
-  // Lidar com a submissão do formulário de evento
-  $('#form-evento').submit(function(event) {
-    event.preventDefault();
-    var titulo = $('#titulo').val();
-    var descricao = $('#descricao').val();
-    var data = $('#data').val();
-    var hora = $('#hora').val();
-    var localizacao = $('#localizacao').val();
-    $.ajax({
-      type: 'POST',
-      url: '/evento',
-      data: {
-        titulo: titulo,
-        descricao: descricao,
-        data: data,
-        hora: hora,
-        localizacao: localizacao
-      },
-      success: function(data) {
-        console.log(data);
-        $('#lista-eventos').append('<p>' + data.titulo + '</p>');
-      }
+  formEvento.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const titulo = document.getElementById('titulo').value;
+    const descricao = document.getElementById('descricao').value;
+    const data = document.getElementById('data').value;
+    const hora = document.getElementById('hora').value;
+    const localizacao = document.getElementById('localizacao').value;
+    eventos.push({ titulo, descricao, data, hora, localizacao });
+    document.getElementById('lista-eventos').innerHTML = '';
+    eventos.forEach((evento) => {
+      const p = document.createElement('p');
+      p.textContent = `${evento.titulo} - ${evento.data} ${evento.hora} - ${evento.localizacao}`;
+      document.getElementById('lista-eventos').appendChild(p);
     });
-  });
-
-  // Lidar com a submissão do formulário de grupo
-  $('#form-grupo').submit(function(event) {
-    event.preventDefault();
-    var nome = $('#nome-grupo').val();
-    var descricao = $('#descricao-grupo').val();
-    $.ajax({
-      type: 'POST',
-      url: '/grupo',
-      data: {
-        nome: nome,
-        descricao: descricao
-      },
-      success: function(data) {
-        console.log(data);
-        $('#lista-grupos').append('<p>' + data.nome + '</p>');
-      }
-    });
+    document.getElementById('titulo').value = '';
+    document.getElementById('descricao').value = '';
+    document.getElementById('data').value = '';
+    document.getElementById('hora').value = '';
+    document.getElementById('localizacao').value = '';
   });
 });
-// Seu script JavaScript aqui
-console.log('Olá, mundo!');
