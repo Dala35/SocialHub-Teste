@@ -1,4 +1,4 @@
-// script.js
+l
 $(document).ready(function() {
   // Lidar com a submissão do formulário de publicação
   $('#form-publicacao').submit(function(event) {
