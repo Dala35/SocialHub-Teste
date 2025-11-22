@@ -2,17 +2,7 @@ body {
   font-family: Arial, sans-serif;
 }
 
-.container {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-#public, #eventos, #grupos {
+#publicacoes, #eventos {
   margin-bottom: 20px;
 }
 
@@ -39,8 +29,4 @@ button[type="submit"] {
 
 button[type="submit"]:hover {
   background-color: #3e8e41;
-}
-/* Seu estilo CSS aqui */
-body {
-  font-family: Arial, sans-serif;
 }
