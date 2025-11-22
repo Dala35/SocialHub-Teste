@@ -4,30 +4,342 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SocialHub</title>
-  <link rel="stylesheet" href="style.css">
+  <!-- Tailwind CSS para estilização moderna e responsiva -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Configurações básicas e fontes */
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0f2f5;
+      min-height: 100vh;
+    }
+    .card {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+    }
+    .scroll-container {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    /* Estilizando o scrollbar */
+    .scroll-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .scroll-container::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1; /* gray-300 */
+      border-radius: 3px;
+    }
+  </style>
 </head>
-<body>
-  <h1>SocialHub</h1>
-  <div id="publicacoes">
-    <h2>Publicações</h2>
-    <form id="form-publicacao">
-      <textarea id="conteudo" placeholder="Escreva algo..."></textarea>
-      <button type="submit">Publicar</button>
-    </form>
-    <div id="lista-publicacoes"></div>
+<body class="p-4 md:p-8 flex flex-col items-center">
+
+  <!-- Cabeçalho -->
+  <div class="w-full max-w-4xl text-center mb-6">
+    <h1 class="text-4xl font-extrabold text-blue-700">SocialHub</h1>
+    <p id="user-info" class="text-sm text-gray-500 mt-2"></p>
   </div>
-  <div id="eventos">
-    <h2>Eventos</h2>
-    <form id="form-evento">
-      <input type="text" id="titulo" placeholder="Título do evento">
-      <textarea id="descricao" placeholder="Descrição do evento"></textarea>
-      <input type="date" id="data">
-      <input type="time" id="hora">
-      <input type="text" id="localizacao" placeholder="Localização do evento">
-      <button type="submit">Criar Evento</button>
-    </form>
-    <div id="lista-eventos"></div>
-  </div>
-  <script src="script.js"></script>
+
+  <!-- Container Principal Responsivo -->
+  <main class="w-full max-w-4xl grid gap-6 lg:grid-cols-2">
+
+    <!-- Seção de Publicações -->
+    <div id="publicacoes" class="card bg-white p-6 rounded-xl">
+      <h2 class="text-2xl font-semibold mb-4 text-gray-700 border-b pb-2">Publicações (Posts)</h2>
+
+      <!-- Formulário de Publicação -->
+      <form id="form-publicacao" class="mb-6">
+        <textarea id="conteudo" rows="3" placeholder="Escreva algo e compartilhe com a comunidade..."
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 mb-3"></textarea>
+        <button type="submit"
+                class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition duration-200">
+          Publicar
+        </button>
+      </form>
+
+      <!-- Lista de Publicações -->
+      <h3 class="text-lg font-medium mb-3 text-gray-600">Feed</h3>
+      <div id="lista-publicacoes" class="space-y-4 scroll-container border p-3 rounded-lg bg-gray-50">
+        <!-- Posts serão carregados aqui -->
+        <p class="text-center text-gray-400 p-4" id="loading-posts">Carregando posts...</p>
+      </div>
+    </div>
+
+    <!-- Seção de Eventos -->
+    <div id="eventos" class="card bg-white p-6 rounded-xl">
+      <h2 class="text-2xl font-semibold mb-4 text-gray-700 border-b pb-2">Eventos</h2>
+
+      <!-- Formulário de Evento -->
+      <form id="form-evento" class="mb-6 space-y-3">
+        <input type="text" id="titulo" placeholder="Título do evento"
+               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+        <textarea id="descricao" rows="2" placeholder="Descrição do evento"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></textarea>
+        <div class="flex space-x-2">
+            <input type="date" id="data" title="Data do Evento"
+                   class="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            <input type="time" id="hora" title="Hora do Evento"
+                   class="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <input type="text" id="localizacao" placeholder="Localização (e.g., Online, Parque Central)"
+               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+        <button type="submit"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition duration-200">
+          Criar Evento
+        </button>
+      </form>
+
+      <!-- Lista de Eventos -->
+      <h3 class="text-lg font-medium mb-3 text-gray-600">Próximos Eventos</h3>
+      <div id="lista-eventos" class="space-y-4 scroll-container border p-3 rounded-lg bg-gray-50">
+        <!-- Eventos serão carregados aqui -->
+        <p class="text-center text-gray-400 p-4" id="loading-events">Carregando eventos...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Firebase Imports -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, query, onSnapshot, addDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Set Firebase Debug Log Level (Optional but helpful)
+    setLogLevel('error');
+
+    // --- Variáveis Globais do Canvas (MANDATÓRIO) ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-socialhub-app';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    // --- Inicialização do Firebase ---
+    let app, db, auth;
+    let userId = null;
+    let isAuthReady = false;
+
+    // 1. Inicializa o Firebase e a Autenticação
+    try {
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+      document.getElementById('loading-posts').textContent = "Autenticando...";
+      document.getElementById('loading-events').textContent = "Autenticando...";
+
+      // Tenta autenticar com o token personalizado ou anonimamente
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erro ao tentar autenticar:", error);
+            }
+        }
+        
+        // Autenticação completa
+        userId = auth.currentUser?.uid || 'anon-user-' + crypto.randomUUID().substring(0, 8);
+        isAuthReady = true;
+        document.getElementById('user-info').textContent = `Usuário ID: ${userId}`;
+
+        // Inicia a escuta do Firestore
+        setupRealtimeListeners();
+      });
+
+    } catch (error) {
+      console.error("Erro ao inicializar Firebase:", error);
+      document.getElementById('loading-posts').textContent = "Erro: Falha ao carregar o Firebase. Verifique a configuração.";
+      document.getElementById('loading-events').textContent = "Erro: Falha ao carregar o Firebase. Verifique a configuração.";
+    }
+
+    // --- Coleções do Firestore (Caminho Público/Colaborativo) ---
+    const POSTS_COLLECTION_PATH = `artifacts/${appId}/public/data/socialhub_posts`;
+    const EVENTS_COLLECTION_PATH = `artifacts/${appId}/public/data/socialhub_events`;
+
+    // 2. Configura a escuta em tempo real (onSnapshot)
+    function setupRealtimeListeners() {
+      if (!isAuthReady) return;
+
+      // Listener para Posts
+      const postsRef = collection(db, POSTS_COLLECTION_PATH);
+      const postsQuery = query(postsRef);
+
+      onSnapshot(postsQuery, (snapshot) => {
+        const posts = [];
+        snapshot.forEach((doc) => {
+          posts.push({ id: doc.id, ...doc.data() });
+        });
+        // Ordena por data de criação (mais recente primeiro)
+        posts.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+        renderPosts(posts);
+      }, (error) => {
+        console.error("Erro ao carregar posts:", error);
+        document.getElementById('loading-posts').textContent = "Erro ao carregar o feed.";
+      });
+
+      // Listener para Eventos
+      const eventsRef = collection(db, EVENTS_COLLECTION_PATH);
+      const eventsQuery = query(eventsRef);
+
+      onSnapshot(eventsQuery, (snapshot) => {
+        const events = [];
+        snapshot.forEach((doc) => {
+          events.push({ id: doc.id, ...doc.data() });
+        });
+        // Ordena por data do evento (mais próximo primeiro)
+        events.sort((a, b) => new Date(a.data) - new Date(b.data));
+        renderEvents(events);
+      }, (error) => {
+        console.error("Erro ao carregar eventos:", error);
+        document.getElementById('loading-events').textContent = "Erro ao carregar eventos.";
+      });
+    }
+
+    // 3. Funções de Renderização
+    function renderPosts(posts) {
+      const list = document.getElementById('lista-publicacoes');
+      list.innerHTML = '';
+      if (posts.length === 0) {
+        list.innerHTML = '<p class="text-center text-gray-500 p-4">Nenhuma publicação ainda. Seja o primeiro a postar!</p>';
+        return;
+      }
+
+      posts.forEach(post => {
+        const postElement = document.createElement('div');
+        postElement.className = 'bg-white p-4 rounded-lg border border-gray-200';
+        
+        const date = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString('pt-BR') : 'Sem data';
+
+        postElement.innerHTML = `
+          <p class="text-gray-800 break-words whitespace-pre-wrap mb-2">${escapeHTML(post.conteudo)}</p>
+          <div class="text-xs text-gray-500 flex justify-between pt-2 border-t mt-2">
+            <span>Por: <span class="font-medium">${post.authorId.substring(0, 10)}...</span></span>
+            <span>${date}</span>
+          </div>
+        `;
+        list.appendChild(postElement);
+      });
+    }
+
+    function renderEvents(events) {
+      const list = document.getElementById('lista-eventos');
+      list.innerHTML = '';
+      if (events.length === 0) {
+        list.innerHTML = '<p class="text-center text-gray-500 p-4">Nenhum evento agendado. Crie um!</p>';
+        return;
+      }
+
+      events.forEach(evento => {
+        const eventElement = document.createElement('div');
+        eventElement.className = 'bg-white p-4 rounded-lg border border-gray-200';
+
+        eventElement.innerHTML = `
+          <h4 class="text-base font-semibold text-blue-600 mb-1">${escapeHTML(evento.titulo)}</h4>
+          <p class="text-sm text-gray-700 mb-2">${escapeHTML(evento.descricao)}</p>
+          <div class="text-xs text-gray-500 space-y-1">
+            <p><span class="font-medium text-gray-600">Quando:</span> ${evento.data} às ${evento.hora}</p>
+            <p><span class="font-medium text-gray-600">Onde:</span> ${escapeHTML(evento.localizacao)}</p>
+            <p>Criado por: ${evento.authorId.substring(0, 10)}...</p>
+          </div>
+        `;
+        list.appendChild(eventElement);
+      });
+    }
+
+    // Função utilitária para prevenir XSS
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+    }
+
+
+    // 4. Manipulação de Formulários
+    document.addEventListener('DOMContentLoaded', () => {
+      const formPublicacao = document.getElementById('form-publicacao');
+      const formEvento = document.getElementById('form-evento');
+
+      // Envio de Publicação
+      formPublicacao.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAuthReady || !db) return;
+
+        const textarea = document.getElementById('conteudo');
+        const conteudo = textarea.value.trim();
+
+        if (conteudo) {
+          const button = formPublicacao.querySelector('button');
+          button.disabled = true;
+          button.textContent = 'Publicando...';
+
+          try {
+            await addDoc(collection(db, POSTS_COLLECTION_PATH), {
+              conteudo: conteudo,
+              authorId: userId,
+              timestamp: serverTimestamp()
+            });
+            textarea.value = '';
+          } catch (error) {
+            console.error("Erro ao adicionar publicação:", error);
+            // Em vez de alert(), podemos usar um console.error ou mensagem na UI
+          } finally {
+            button.disabled = false;
+            button.textContent = 'Publicar';
+          }
+        }
+      });
+
+      // Envio de Evento
+      formEvento.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAuthReady || !db) return;
+
+        const titulo = document.getElementById('titulo').value.trim();
+        const descricao = document.getElementById('descricao').value.trim();
+        const data = document.getElementById('data').value;
+        const hora = document.getElementById('hora').value;
+        const localizacao = document.getElementById('localizacao').value.trim();
+
+        if (titulo && data && hora && localizacao) {
+          const button = formEvento.querySelector('button');
+          button.disabled = true;
+          button.textContent = 'Criando...';
+
+          try {
+            await addDoc(collection(db, EVENTS_COLLECTION_PATH), {
+              titulo: titulo,
+              descricao: descricao,
+              data: data, // Formato YYYY-MM-DD
+              hora: hora, // Formato HH:MM
+              localizacao: localizacao,
+              authorId: userId,
+              timestamp: serverTimestamp()
+            });
+
+            // Limpa o formulário
+            document.getElementById('titulo').value = '';
+            document.getElementById('descricao').value = '';
+            document.getElementById('data').value = '';
+            document.getElementById('hora').value = '';
+            document.getElementById('localizacao').value = '';
+
+          } catch (error) {
+            console.error("Erro ao adicionar evento:", error);
+          } finally {
+            button.disabled = false;
+            button.textContent = 'Criar Evento';
+          }
+        }
+      });
+    });
+  </script>
 </body>
 </html>
+
